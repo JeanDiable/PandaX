@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+
+<processes>
+
+  <globals>
+    <variable name="NPOINTS" value="5" overwrite="false" />
+    <variable name="POINT_TH" value="3.5" overwrite="false" />
+    <variable name="SGNL_TH" value="2.8" overwrite="false" />
+    <variable name="BL_MIN" value="20" overwrite="false" />
+    <variable name="BL_MAX" value="40" overwrite="false" />
+
+    <variable name="SAMPLING" value="200" overwrite="false" />
+<!-- Mebius -->
+    <variable name="GASPRESSURE" value="10" overwrite="false" />
+    <variable name="EFIELD" value="1" overwrite="false" />
+    <variable name="NOISELEVEL" value="10/4096*120" overwrite="false" />
+    <variable name="SHAPINGTIME" value="1.014" overwrite="false" />
+    <variable name="DRIFTVELOCITY" value="1.5" overwrite="false" />
+
+    <variable name="SAMPLINGNPOINTS" value="512" overwrite="false" />
+    <variable name="TRIGGERDELAY" value="100" overwrite="false" />
+  </globals>
+
+  <!-- *********************************************************************** -->
+  <!-- ********************************G4Event******************************** -->
+  <!-- *********************************************************************** -->
+  <TRestGeant4AnalysisProcess name="g4Ana" title="Mebius Geant4 analysis" >
+    <observable name="gasEDep" value="ON"
+                description="Energy deposited in the gas volume in keV" />
+    <observable name="vesselEDep" value="OFF"
+                description="Energy deposited in the vessel volume in keV" />
+    <observable name="totalEdep" value="ON"
+                description="Total energy deposited in all the volumes in keV" />
+    <observable name="photoelectric" value="ON"
+                description="Its value will be 1 if the event contains a photoelectric interaction." />
+    <observable name="compton" value="ON"
+                description="Its value will be 1 if the event contains a compton scattering process." />
+    <observable name="bremstralung" value="ON"
+                description="Its value will be 1 if the event contains a bremstralung physics process." />
+    <parameter name="lowEnergyCut" value="2390" units="keV" />
+    <parameter name="highEnergyCut" value="2520" units="keV" />
+  </TRestGeant4AnalysisProcess>
+
+<!-- *********************************************************************** -->
+<!-- *******************************HitsEvent******************************* -->
+<!-- *********************************************************************** -->
+  <TRestG4toHitsProcess name="G4ToHits" title="Mebius G4 to Hits process" >
+  </TRestG4toHitsProcess>
+
+  <TRestMainG4toHitsProcess name="MainG4ToHits" title="Mebius MainG4 to Hits process" >
+    <parameter name="TrackNum" value="1" />
+  </TRestMainG4toHitsProcess>
+
+  <TRestElectronDiffusionProcess name="eDiff_1kVcm_10atm" title="eDiff" >
+    <parameter name="electricField" value="${EFIELD}" units="kV/cm" />
+    <parameter name="attachment" value="0" />
+    <!-- units?? -->
+    <parameter name="gasPressure" value="${GASPRESSURE}" units="atm"/>
+    <parameter name="Wvalue" value="" units="eV" />
+    <observable name="readoutPlaneEnergy_0" value="ON" />
+    <!-- There is no need to specify additional parameters if all values will be taken from the gas properties (TRestGas). -->
+  </TRestElectronDiffusionProcess>
+
+
+  <TRestAvalancheProcess name="NLDBD" title="Mebius 1PctGain" >
+    <parameter name="energyReference" value="2458" units="keV" />
+    <parameter name="resolutionReference" value="3" />
+    <parameter name="detectorGain" value="1" />
+  </TRestAvalancheProcess>
+
+  <TRestFiducializationProcess name="Judge" title="Mebius judge hits" >
+  </TRestFiducializationProcess>
+
+  <TRestHitsShuffleProcess name="hitsShuffle" title="Mebius Shuffles the hits" >
+    <parameter name="iterations" value="1000" />
+  </TRestHitsShuffleProcess>
+
+  <TRestHitsAnalysisProcess name="hitsAna" title="Hits analysis Mebius"  >
+    <observable name="energy" value="ON" />
+    <observable name="xMean" value="ON" />
+    <observable name="yMean" value="ON" />
+    <observable name="zMean" value="ON" />
+  </TRestHitsAnalysisProcess>
+
+  <TRestSmearingProcess name="smear_3FWHM" title="Mebius Smearing" >
+    <parameter name="energyReference" value="2458" units="keV" />
+    <parameter name="resolutionReference" value="2.19" />
+  </TRestSmearingProcess>
+
+
+  <TRestHitsNormalizationProcess name="hitsNorm" title="Mebius Hits normalization" >
+    <!-- why need this??? -->
+    <parameter name="normFactor" value="0.021917" />
+  </TRestHitsNormalizationProcess>
+
+  <TRestHitsReductionProcess name="hitsReduction" title="Mebius Merges the closest hits in a HitsEvent" >
+    <parameter name="startingDistance" value="1" units="mm" />
+    <parameter name="minimumDistance" value="1.5" units="mm" />
+    <parameter name="distanceStepFactor" value="1.2" />
+    <parameter name="maxNodes" value="600" />
+  </TRestHitsReductionProcess>
+
+<!-- ************************************************************************* -->
+<!-- *******************************SignalEvent******************************* -->
+<!-- ************************************************************************* -->
+  <TRestHitsToSignalProcess name="hitsToSignal" title="A hits to signal template" >
+    <parameter name="sampling" value="${SAMPLING}" units="ns" />
+    <parameter name="electricField" value="${EFIELD}" units="kV/cm" />
+    <!-- If specified, the following parameters will modify the properties of the gas found in TRestGas -->
+    <parameter name="gasPressure" value="${GASPRESSURE}" units="atm"/>
+    <parameter name="driftVelocity" value="" units="mm/us"/>
+  </TRestHitsToSignalProcess>
+
+  <TRestSignalAnalysisProcess name="signalAna" title="signalAna Mebius" >
+
+    <!-- This parameter defines every how many seconds a signal will be drawn.
+         In case the value is zero. There will not be any drawing. -->
+    <parameter name="refreshEvery" value="1000" />
+
+    <!-- This parameter is used to define the baseline calculation -->
+    <parameter name="baseLineRange" value="(${BL_MIN},${BL_MAX})" />
+
+    <!-- This parameter is used to define the signal integration window -->
+    <parameter name="integralRange" value="(20,492)" />
+
+    <!-- These parameters define the integral with threshold.
+         threshold : number of baseline noise sigmas to consider a point for integration.
+         pointsOverThreshold : Number of consecutive points over threshold to be considered for integration.
+         minPeakAmplitude : Minimum peak signal amplitude to be considered at all.
+        -->
+    <parameter name="pointThreshold" value="${POINT_TH}" />
+    <parameter name="pointsOverThreshold" value="${NPOINTS}" />
+    <parameter name="signalThreshold" value="${SGNL_TH}" />
+
+    <!-- ++++++++++++++++++++++
+         Observable definitions
+         ++++++++++++++++++++++ -->
+
+    <!-- This observable needs to be refined
+    <observable name="TimeBinsLength" value="ON" />
+-->
+
+    <!-- Event time observables -->
+    <observable name="SecondsFromStart" value="ON" />
+    <observable name="HoursFromStart" value="ON" />
+    <observable name="MeanRate_InHz" value="ON" />
+    <observable name="EventTimeDelay" value="ON" />
+
+    <!-- The numbers of signals that are found inside the event -->
+    <observable name="NumberOfSignals" value="ON" />
+
+    <!-- Number of signals after noisy signals reduction -->
+    <observable name="NumberOfGoodSignals" value="ON" />
+
+    <!-- The baseline average of the signals -->
+    <observable name="BaseLineMean" value="ON" />
+
+    <!-- The baseline sigma average of each independent signal -->
+    <observable name="BaseLineSigmaMean" value="ON" />
+
+    <!-- The full signal integral in the integralRange -->
+    <observable name="FullIntegral" value="ON" />
+
+    <!-- The signal integral in the integralRange using threshold -->
+    <observable name="ThresholdIntegral" value="ON" />
+
+    <!-- The energy balance between full integral and threshold integral -->
+    <observable name="IntegralBalance" value="ON" />
+
+    <!-- Maximum peak amplitude found in the signal event -->
+    <observable name="MaxPeakAmplitude" value="ON" />
+
+    <!-- Integral of all the signals maximum amplitude -->
+    <observable name="PeakAmplitudeIntegral" value="ON" />
+
+    <!-- Ratio between peak amplitude integral and maximum signal amplitude -->
+    <observable name="AmplitudeRatio" value="ON" />
+
+    <!-- Maximum time at which a maximum peak amplitude is found -->
+    <observable name="MaxPeakTime" value="ON" />
+
+    <!-- Minimum time at which a maximum peak amplitude is found -->
+    <observable name="MinPeakTime" value="ON" />
+
+    <!-- Time difference between MaxPeakTime and MinPeakTime -->
+    <observable name="MaxPeakTimeDelay" value="ON" />
+
+    <!-- Max peak time average -->
+    <observable name="AveragePeakTime" value="ON" />
+
+    <!-- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+         Cut/event selection definition
+         This are the cut range definition on the observables
+         Events that are not in those ranges will be rejected if cutsEnables is true.
+         ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+
+    <parameter name="cutsEnabled" value="false" />
+
+    <parameter name="meanBaseLineCutRange" value="(0,300)" />
+    <parameter name="meanBaseLineSigmaCutRange" value="(0,20)" />
+    <parameter name="maxNumberOfSignalsCut" value="(1,20)" />
+    <parameter name="maxNumberOfGoodSignalsCut" value="(1,10)" />
+    <parameter name="fullIntegralCut" value="(1,500000)" />
+    <parameter name="thresholdIntegralCut" value="(1,150000)" />
+    <parameter name="peakTimeDelayCut" value="(0,40)" />
+  </TRestSignalAnalysisProcess>
+  <!-- **************************************************************************** -->
+  <!-- *******************************RawSignalEvent******************************* -->
+  <!-- **************************************************************************** -->
+  <TRestSignalToRawSignalProcess name="SignalToRaw" title="SignalToRaw" >
+    <parameter name="sampling" value="${SAMPLING}" units="ns" />
+    <parameter name="Npoints" value="${SAMPLINGNPOINTS}" />
+    <parameter name="triggerMode" value="firstDeposit" />
+    <parameter name="triggerDelay" value="${TRIGGERDELAY}" />
+    <parameter name="gain" value="1" />
+    <parameter name="integralThreshold" value="10" /><!--只在integralThreshold有效-->
+  </TRestSignalToRawSignalProcess>
+
+  <TRestRawSignalShapingProcess name="signalShapingProcess" title="Test SignalShaping" >
+    <!--<parameter name="responseFile" value="AGET_Response_12.5MHz_Gain0x1_Shaping0x4.root" />--> //response file to be used to shape the signal
+    <parameter name="shapingType" value="gaus" />
+    <parameter name="shapingTime" value="${SHAPINGTIME}" units="us" />
+    <parameter name="gain" value="1000" />
+  </TRestRawSignalShapingProcess>
+
+  <TRestRawSignalAddNoiseProcess name="addSignalNoise" title="AddNoise to Signal Mebius" >
+    <parameter name="noiseLevel" value="${NOISELEVEL}" /> // // electrons in each time bin
+  </TRestRawSignalAddNoiseProcess>
+<!-- **************************************************************************** -->
+<!-- *******************************SignalEvent******************************* -->
+<!-- **************************************************************************** -->
+  <TRestRawSignalToSignalProcess name="rawToS" title="rawToSignalProcess." >
+    <parameter name="sampling" value="${SAMPLING}" units="ns" />
+    <parameter name="triggerStarts" value="0" units="us" />
+    <parameter name="gain" value="1" />
+  </TRestRawSignalToSignalProcess>
+
+  <TRestSignalZeroSuppresionProcess name="zS" title="ZeroSuppresion"  >
+    <parameter name="baseLineRange" value="(${BL_MIN},${BL_MAX})" />
+    <parameter name="integralRange" value="(${TRIGGERDELAY},${SAMPLINGNPOINTS})" />
+    <parameter name="pointThreshold" value="${POINT_TH}" />
+    <parameter name="pointsOverThreshold" value="${NPOINTS}" />
+    <parameter name="signalThreshold" value="${SGNL_TH}" />
+    <parameter name="sampling" value="${SAMPLING}" units="ns" />
+  </TRestSignalZeroSuppresionProcess>
+  <TRestSignalDivideProcess name="SignalDivide" title="SignalDivide." >
+    <parameter name="xq" value="666" />
+  </TRestSignalDivideProcess>
+<!-- **************************************************************************** -->
+<!-- *******************************HitsEvent******************************* -->
+<!-- **************************************************************************** -->
+  <TRestSignalToHitsProcess name="SignalToHits" title="A hit reconstruction template." >
+    <parameter name="electricField" value="${EFIELD}" units="kV/cm" />
+    <parameter name="gasPressure" value="${GASPRESSURE}" units="atm"/>
+    <parameter name="driftVelocity" value="" units="mm/us"/>
+    <parameter name="method" value="" />
+  </TRestSignalToHitsProcess>
+  <TRestSignalClusterProcess name="SignalCluster" title="SignalCluster." >
+    <parameter name="electricField" value="${EFIELD}" units="kV/cm" />
+    <parameter name="gasPressure" value="${GASPRESSURE}" untis="atm"/>
+    <parameter name="driftVelocity" value="" units="mm/us"/>
+  </TRestSignalClusterProcess>
+  <!-- **************************************************************************** -->
+  <!-- *******************************TrackEvent******************************* -->
+  <!-- **************************************************************************** -->
+  <TRestHitsToTrackProcess name="hitsToTrack" title="" >
+    <parameter name="clusterDistance" value="10" units="mm" />
+  </TRestHitsToTrackProcess>
+
+  <TRestFastHitsToTrackProcess name="fastHitsToTrack" title="" >
+    <parameter name="cellResolution" value="10" units="mm" />
+    <parameter name="netSize" value="2000" units="mm" />
+    <parameter name="netOrigin" value="(-1000,-1000,-1000)" units="mm" />
+  </TRestFastHitsToTrackProcess>
+
+  <TRestTrackReductionProcess name="trackReduction" title="Merges the closer hits in a TrackEvent" >
+    <parameter name="startingDistance" value="1" units="mm" />
+    <parameter name="minimumDistance" value="30" units="mm" />
+    <parameter name="distanceStepFactor" value="3" />
+    <parameter name="maxNodes" value="300" />
+  </TRestTrackReductionProcess>
+
+  <TRestXQTrackToHitsProcess name="TrackToHits" title="Mebius TrackToHits" >
+    <parameter name="trackLevel" value="2" />
+    <parameter name="gain" value="1" />
+    <parameter name="onlymain" value="true" />
+  </TRestXQTrackToHitsProcess>
+
+  <TRestXQCombinationProcess name="HitsCombination" title="Mebius HitsCombination" >
+    <parameter name="Distance" value="3" units="mm" />
+    <parameter name="DetZ" value="1" units="mm" />
+    <parameter name="Gain" value="0.001" units="mm" />
+  </TRestXQCombinationProcess>
+
+
+</processes>

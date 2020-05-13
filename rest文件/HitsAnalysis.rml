@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+
+<TRestManager name="Mebius_AnalysisProcess" title="simulation of new detector" verboseLevel="info" >
+
+  <TRestRun name="New_Detector" >
+    <addMetadata name="Panda-CDR" file="myMetadata.root"/>
+    <addMetadata type="TRestGas" name="Xenon-TMA 1Pct 10-10E3Vcm" file="myMetadata.root"/>
+  </TRestRun>
+  <TRestProcessRunner name="Processor" verboseLevel="REST_Debug">
+    <parameter name="eventsToProcess" value="10" />
+    <parameter name="threadNumber" value="1"/>
+
+    <parameter name="inputAnalysis" value="on"/>
+    <parameter name="inputEvent" value="on"/>
+    <parameter name="outputAnalysis" value="on"/>
+    <parameter name="outputEvent" value="on"/>
+
+<!-- HitsEvent:模拟电子在TPC中打到readout这个阶段的物理过程-->
+    <addProcess type="TRestG4toHitsProcess" name="G4ToHits" value="ON" file="MyProcess.rml"/>
+    <addProcess type="TRestElectronDiffusionProcess" name="eDiff_10kVcm_10atm" value="ON" file="MyProcess.rml"/>
+  </TRestProcessRunner>
+
+  <addTask command="Processor->PrintMetadata()" value="ON"/>
+<!--  <addTask command="Processor->SaveMetadata()" value="ON"/>  -->
+  <addTask command="Processor->RunProcess()" value="ON"/>
+
+  <globals>
+    <searchPath value="$ENV{REST_INPUTDATA}/definitions/"/>
+    <parameter name="outputLevel" value="internalvar" /> %options are : nooutput(0), observable(1), internalvar(2), fulloutput(3)
+    <parameter name="verboseLevel" value="info" /> %options are : silent(0), essential(1), info(2), debug(3), extreme(4)
+    <parameter name="inputFile" value="${REST_INPUTFILE}"/>
+    <parameter name="outputFile" value="output.root" />
+    <parameter name="mainDataPath" value="" />
+  </globals>
+
+</TRestManager>
+
+
+<!--paramater here is accessible to all the classes-->

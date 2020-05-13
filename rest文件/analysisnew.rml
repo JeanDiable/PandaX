@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+
+<TRestManager name="Mebius_AnalysisProcess" title="simulation of new detector" verboseLevel="info" >
+
+  <TRestRun name="New_Detector" >
+    <addMetadata name="Panda-CDR" file="myMetadata.root"/>
+    <addMetadata type="TRestGas" name="Xenon-TMA 1Pct 10-10E3Vcm" file="myMetadata.root"/>
+  </TRestRun>
+  <TRestProcessRunner name="Processor" verboseLevel="REST_Debug">
+    <parameter name="eventsToProcess" value="10000000" />
+    <parameter name="threadNumber" value="1"/>
+
+    <parameter name="inputAnalysis" value="off"/>
+    <parameter name="inputEvent" value="off"/>
+    <parameter name="outputAnalysis" value="off"/>
+    <parameter name="outputEvent" value="on"/>
+
+<!-- HitsEvent:模拟电子在TPC中打到readout这个阶段的物理过程-->
+    <addProcess type="TRestGeant4AnalysisProcess" name="g4Ana" value="ON" file="MyProcess.rml"/>
+    <addProcess type="TRestG4toHitsProcess" name="G4ToHits" value="ON" file="MyProcess.rml"/>
+    <addProcess type="TRestElectronDiffusionProcess" name="eDiff_1kVcm_10atm" value="ON" file="MyProcess.rml"/> -->
+<!--    <addProcess type="TRestAvalancheProcess" name="NLDBD" value="ON" file="MyProcess.rml"/> -->
+    <addProcess type="TRestFiducializationProcess" name="Judge" value="ON" file="MyProcess.rml"/>
+    <addProcess type="TRestSmearingProcess" name="smear_3FWHM" value="ON" file="MyProcess.rml"/>
+    <addProcess type="TRestHitsShuffleProcess" name="hitsShuffle" value="ON" file="MyProcess.rml"/>-->
+<!-- TODO:SignalEvent:模拟电子学-->
+    <addProcess type="TRestHitsToSignalProcess" name="hitsToSignal" value="ON" file="MyProcess.rml"/>
+    <addProcess type="TRestSignalToRawSignalProcess" name="SignalToRaw" value="ON" file="MyProcess.rml"/>
+    <addProcess type="TRestRawSignalShapingProcess" name="signalShapingProcess" value="ON" file="MyProcess.rml"/>-->
+    <addProcess type="TRestRawSignalAddNoiseProcess" name="addSignalNoise" value="ON" file="MyProcess.rml"/>-->
+    <addProcess type="TRestZeroSuppresionProcess" name="zS" value="ON" file="MyProcess.rml"/>-->
+    <addProcess type="TRestSignalToHitsProcess" name="SignalToHits" value="ON" file="MyProcess.rml"/>-->
+  </TRestProcessRunner>
+
+  <addTask command="Processor->PrintMetadata()" value="OFF"/>
+  <addTask command="Processor->SaveMetadata()" value="OFF"/>
+  <addTask command="Processor->RunProcess()" value="ON"/>
+
+  <globals>
+    <searchPath value="$ENV{REST_INPUTDATA}/definitions/"/>
+    <parameter name="outputLevel" value="internalvar" /> %options are : nooutput(0), observable(1), internalvar(2), fulloutput(3)
+    <parameter name="verboseLevel" value="info" /> %options are : silent(0), essential(1), info(2), debug(3), extreme(4)
+    <parameter name="inputFile" value="${REST_INPUTFILE}"/>
+    <parameter name="outputFile" value="output.root" />
+    <parameter name="mainDataPath" value="" />
+  </globals>
+
+</TRestManager>
+
+
+<!--paramater here is accessible to all the classes-->
